@@ -13,5 +13,6 @@ stateDiagram-v2
     Opciones --> Generando
 
 
+nota: actualizado a la ultima versión de Android Studio 2.1
 
   
