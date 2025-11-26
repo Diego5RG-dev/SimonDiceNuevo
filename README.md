@@ -42,52 +42,85 @@ Procedimos a dividirnos las responsabilidades mediante la creación de issues es
 
 Utilizando las buenas prácticas y los patrones de diseño aprendidos en clase, dimos inicio a la codificación mediante la creación de las siguientes clases principales que modelarán la arquitectura de nuestro juego "Simón Dice":
 
-<details><summary><h3>Datos</h3></summary>
+<details><summary><h3>Datos.kt</h3></summary>
 
-Actúa como un contenedor de estado global y constantes para el juego. Almacena las variables clave que persisten a lo largo de la ejecución.
+Actúa como un contenedor estático (object) para el estado global y las constantes del juego. Centraliza todas las variables de persistencia y control que deben ser accesibles y observables por el resto de la aplicación.
 
 Elementos Clave:
 
-**Datos (object):** Almacena el puntaje actual (victorias), el récord (rondasSuperadas) y la última secuencia generada (numero). Utiliza MutableStateFlow para permitir la observación reactiva del score por parte de la interfaz.
+**secuenciaMaquina:** Lista mutable que almacena los números de los colores generados por la máquina en la secuencia actual. (Crucial para el juego de secuencia creciente)
 
-**Colores (enum):** Define los cuatro colores principales del juego (Rojo, Verde, Azul, Amarillo) y el color del botón Start, asociando a cada uno su respectivo objeto Color de Compose.
+**secuenciaJugador:** Lista mutable que almacena los números de los botones pulsados por el usuario.
 
-**Estados (enum):** Define los cinco estados posibles del juego (INICIO, GENERANDO, ADIVINANDO, RECORD, ERROR), controlando qué elementos de la interfaz deben estar activos (botones, Start) en cada momento.
+**victorias y rondasSuperadas:** Utilizan MutableStateFlow para permitir la observación reactiva y almacenar la puntuación actual y el récord.
+
+**isPrinted:** Flag (MutableStateFlow<Boolean>) utilizado por la UI para evitar que la secuencia se repita si el estado cambia sin una nueva generación.
+
+**Colores (enum class):** Define los cuatro colores principales y el botón 'Start'. Asocia un id (0-4), el color principal, un color_suave (para el parpadeo de la secuencia) y el txt de la etiqueta.
+
+**Estados (enum class):** Define los estados del juego (INICIO, GENERANDO, ADIVINANDO, ERROR, etc.). Cada estado lleva consigo las banderas booleanas:
+
+**start_activo:** Controla si el botón "Start" está habilitado.
+
+**boton_activo:** Controla si los botones de colores están habilitados para la entrada del jugador.
+
+**colorearSecuencia:** Flag que dispara la animación de la secuencia en la JuegoScreen.
 
 </details>
 
 
-<details><summary><h3>MyViewModel</h3></summary>
+<details><summary><h3>MyViewModel.kt</h3></summary>
 
-Es el cerebro de la aplicación. Contiene toda la lógica del juego, maneja los estados y coordina la actualización de los datos.
+Es el cerebro del juego. Contiene la lógica principal, gestiona las transiciones de estados y coordina la actualización de los datos en Datos.kt.
 
-Elementos Clave:
+Funciones Clave:
 
-**estadoLiveData:** Variable clave que notifica a la interfaz (UI) sobre el estado actual del juego, siguiendo el patrón Observer.
+**crearRandom():** Limpia la secuencia del jugador, establece el estado a ESPERANDO. Genera un número aleatorio (0 a 3) y lo añade al final de Datos.secuenciaMaquina (haciendo crecer la secuencia) y finaliza cambiando el estado a GENERANDO para que la UI inicie la animación de la secuencia.
 
-**crearRandom():** Cambia el estado a GENERANDO, genera un número aleatorio (0 a 3) que representa la nueva secuencia y lo almacena.
+**comprobar():** Lógica de validación central.
 
-**comprobar(ordinal:** Ejecuta la lógica central de validación. Compara el botón pulsado por el usuario con el número guardado. Si acierta, incrementa victorias; si falla, guarda el récord en rondasSuperadas, resetea victorias y cambia el estado a ERROR (Game Over).
+**Comprobación:** Valida si el último pulso del jugador coincide con el pulso correspondiente de la máquina (secuenciaJugador[index] != secuenciaMaquina[index]).
 
-</details>
+**Fallo:** Si hay un error, actualiza el récord (rondasSuperadas), resetea las victorias a 0 y cambia el estado a Estados.ERROR.
 
-<details><summary><h3>IU</h3></summary>
+**Acierto Parcial:** Si la secuencia coincide, pero el jugador aún no ha completado todos los pasos de la secuencia actual, la función retorna, esperando más pulsos.
 
-Se encarga de la presentación visual y reacciona a los cambios de estado del ViewModel. Es la "Vista" dentro del patrón MVVM.
+**Acierto Total:** Si la secuencia del jugador es igual a la de la máquina, incrementa victorias y llama a crearRandom() para empezar la siguiente ronda.
 
-Elementos Clave:
-
-**IU(miViewModel):** Función principal que utiliza un observer para cambiar dinácticamente la pantalla (JuegoScreen o GameOverScreen) según el valor de estadoLiveData.
-
-**JuegoScreen / GameOverScreen:** Componentes que dibujan la interfaz principal del juego y la pantalla de fin de partida, mostrando la puntuación y el récord.
-
-**Boton / Boton_Start:** Componentes reutilizables que controlan su propia activación consultando el estado del juego (boton_activo / start_activo) y comunican las acciones de pulsación al MyViewModel.
+**reiniciarJuego():** Función para el Game Over. Limpia ambas secuencias y vuelve al estado Estados.INICIO.
 
 </details>
 
-<details><summary><h3>MainActivity</h3></summary>
 
-Es el punto de entrada de la aplicación Android. Se encarga de inicializar el entorno y crear la instancia del MyViewModel para pasárselo a la interfaz.
+
+<details><summary><h3>UI.kt</h3></summary>
+
+Define los componentes de Jetpack Compose (la Vista) que dibujan la interfaz y reaccionan a los cambios de estado notificados por el MyViewModel.
+
+Elementos Clave:
+
+**IU(miViewModel):** Función Composable principal que utiliza un Observer de estadoLiveData para decidir qué pantalla renderizar (JuegoScreen o GameOverScreen).
+
+**JuegoScreen:** Contenedor de la vista principal del juego (marcadores, botones de colores y botón "Start").
+
+**Animación de Secuencia:** Contiene la función colorearSecuencia() dentro de un LaunchedEffect. Esta corrutina se dispara cuando el estado es GENERANDO, itera sobre secuenciaMaquina, y usa delay(1000) para colorear y descolorear los botones con el color_suave, mostrando la secuencia a memorizar.
+
+**Boton:** Componente reutilizable para los cuatro botones de colores. Observa el estado del ViewModel para gestionar su propiedad enabled. Al hacer clic, llama a miViewModel.comprobar().
+
+**Boton_Start:** Botón de inicio. Utiliza un LaunchedEffect(_activo) con un bucle while y delay() para crear el efecto de parpadeo (púlsar entre color y color_suave) solo cuando el estado es INICIO.
+
+**GameOverScreen:** Muestra el mensaje de fallo y el récord (rondasSuperadas). El botón "Volver a Empezar" llama a miViewModel.reiniciarJuego().
+
+</details>
+
+
+<details><summary><h3>MainActivity.kt</h3></summary>
+
+Es la actividad principal de Android y el punto de entrada de la aplicación.
+
+Función Clave:
+
+**onCreate():** Inicializa la instancia del MyViewModel y utiliza setContent para renderizar la interfaz principal (IU(miViewModel)), inyectando el ViewModel en la jerarquía de Compose.
 
 </details>
 
@@ -97,38 +130,45 @@ Decisiones clave de diseño
 
 A continuación, se justifican las principales decisiones arquitectónicas y tecnológicas adoptadas:
 
-<details><summary><h3>Gestión del Estado del Juego</h3></summary> 
+<details><summary><h3>Gestión del Estado del Juego</h3></summary>
 
-**Decisión:** Uso del enum class Estados en conjunto con LiveData en el ViewModel para representar una Máquina de Estados Finitos (FSM).
+**Decisión:** Uso del enum class Estados en conjunto con LiveData en el MyViewModel para representar una Máquina de Estados Finitos (FSM).
 
-**Justificación:** Garantiza que el juego se encuentre siempre en un estado válido y predecible (INICIO, GENERANDO, ADIVINANDO, ERROR). La interfaz solo puede reaccionar a las transiciones definidas, evitando comportamientos inconsistentes (por ejemplo, impidiendo la entrada del usuario durante la fase GENERANDO).
+**Justificación:** Garantiza que el juego se encuentre siempre en un estado válido y predecible (INICIO, GENERANDO, ADIVINANDO, ERROR). Esto controla cuándo se activan los botones (boton_activo) y la animación de la secuencia (colorearSecuencia).
 
 </details>
 
 
-<details><summary><h3>Uso de Jetpack Compose</h3></summary> 
-
+<details><summary><h3>Uso de Jetpack Compose</h3></summary>
+    
 **Decisión:** Interfaz de usuario declarativa implementada completamente con Jetpack Compose.
 
-**Justificación:** Permite un desarrollo de UI más rápido y reactivo. La interfaz (UI.kt) se reconstruye automáticamente solo en los componentes afectados cuando el estado de los datos (observados vía LiveData o StateFlow) cambia, optimizando el rendimiento.
+**Justificación:** Permite un desarrollo de UI más rápido y reactivo. La interfaz se actualiza automáticamente solo en los componentes afectados cuando el estado cambia, optimizando el rendimiento.
 
 </details>
 
-<details><summary><h3>Persistencia de Datos Reactiva</h3></summary> 
 
+<details><summary><h3>Persistencia de Datos Reactiva</h3></summary>
+    
 **Decisión:** Utilización de MutableStateFlow (en Datos.kt) para variables críticas como victorias y rondasSuperadas.
 
-**Justificación:** Aunque se usa LiveData para el estado principal, StateFlow ofrece una manera eficiente y asíncrona de exponer flujos de datos a la UI. Esto permite que los composables (como el texto de la puntuación) se actualicen de forma reactiva y con mayor rendimiento.
+**Justificación:** StateFlow ofrece una manera eficiente y asíncrona de exponer flujos de datos a la UI. Esto permite que los composables (como el texto de la puntuación en JuegoScreen) se actualicen de forma reactiva y con mayor rendimiento.
 
 </details>
 
-<details><summary><h3>Componentes Reutilizables</h3></summary>
+<details><summary><h3>Componentes Reutilizables y Animación Asíncrona</h3></summary> 
+    
+**Decisión:** Creación de funciones @Composable específicas como Boton y Boton_Start. Además, se usa LaunchedEffect para animaciones.
 
-**Decisión:** Creación de funciones @Composable específicas como Boton y Boton_Start.
+**Justificación:**
 
-**Justificación:** Mejora la modularidad y reduce la duplicación de código. El componente Boton_Start incluye un LaunchedEffect para gestionar la animación de parpadeo de forma controlada y eficiente (solo se activa en el estado INICIO), separando la lógica visual de la lógica del juego.
+Mejora la modularidad y reduce la duplicación de código.
+
+El Boton_Start utiliza LaunchedEffect para gestionar la animación de parpadeo de forma controlada y eficiente (solo se activa en el estado INICIO).
+
+La secuencia de colores en JuegoScreen también usa una corrutina con delay() dentro de un observer para sincronizar la animación.
+
 </details>
-
 
 ---
 Fuincionamiento del programa 
@@ -137,7 +177,7 @@ Fuincionamiento del programa
 Esta sección presenta las pruebas de la aplicación "Damian Dice" que demuestran la correcta implementación de la lógica del juego y la gestión de los estados, confirmando el patrón MVVM
 
 <p align="center">
-  <img src="damiandice.gif" alt="Demostración del Juego" width="450"/>
+  <img src="damiandicefinal.gif" alt="Demostración del Juego" width="450"/>
 </p>
 
 
