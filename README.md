@@ -128,7 +128,11 @@ A continuación, se justifican las principales decisiones arquitectónicas y tec
 </details>
 
 
+---
+Fuincionamiento del programa 
+---
 
+Esta sección presenta las pruebas de la aplicación "Damian Dice" que demuestran la correcta implementación de la lógica del juego y la gestión de los estados, confirmando el patrón MVVM
 
 
 
