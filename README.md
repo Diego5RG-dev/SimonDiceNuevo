@@ -25,6 +25,8 @@ stateDiagram-v2
     Opciones --> Idle
     Opciones --> Adivinando
     Opciones --> Generando
+
+nota: actualizado a la ultima versión de Android Studio 2.1
 ```
 
 </details>
