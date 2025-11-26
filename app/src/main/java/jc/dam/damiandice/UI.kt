@@ -1,7 +1,6 @@
 package jc.dam.damiandice
 
 import android.util.Log
-import android.widget.Space
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,38 +11,58 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.collections.get
 import androidx.compose.material3.Text
-import androidx.compose.runtime.ComposableOpenTarget
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
+import androidx.compose.runtime.collectAsState
+
 
 @Composable
 fun IU(miViewModel: MyViewModel) {
+    var estadoActual by remember { mutableStateOf(miViewModel.estadoLiveData.value ?: Estados.INICIO) }
+
+    // Observador del LiveData que actualiza el estado interno de Compose
+    miViewModel.estadoLiveData.observe(LocalLifecycleOwner.current) { nuevoEstado ->
+        estadoActual = nuevoEstado
+    }
+
+    // Elige la pantalla a mostrar basándose en el estado
+    when (estadoActual) {
+        Estados.INICIO, Estados.GENERANDO, Estados.ADIVINANDO, Estados.RECORD -> {
+            JuegoScreen(miViewModel = miViewModel)
+        }
+        Estados.ERROR -> {
+            GameOverScreen(miViewModel = miViewModel)
+        }
+    }
+}
+@Composable
+fun JuegoScreen(miViewModel: MyViewModel) {
+// Observamos las victorias para la ronda actual
+    val victorias by Datos.victorias.collectAsState()
+    // Observamos el record guardado
+    val rondasSuperadas by Datos.rondasSuperadas.collectAsState()
     Column(
         modifier = Modifier.fillMaxWidth().fillMaxHeight().padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceAround
     ) {
         Text(
-            text = "RECORD: ",
+            text = "Ronda: $victorias  / Record: $rondasSuperadas",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 24.dp)
@@ -70,6 +89,48 @@ fun IU(miViewModel: MyViewModel) {
     }
 }
 
+@Composable
+fun GameOverScreen(miViewModel: MyViewModel) {
+    // Observamos el puntaje final
+    val puntaje by Datos.rondasSuperadas.collectAsState()
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "¡FALLO!",
+            fontSize = 48.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = Colores.CLASE_ROJO.color
+        )
+        Spacer(modifier = Modifier.size(32.dp))
+
+        Text(
+            text = "Rondas Superadas:",
+            fontSize = 28.sp
+        )
+
+        Text(
+            text = "$puntaje",
+            fontSize = 64.sp,
+            fontWeight = FontWeight.Black
+        )
+        Spacer(modifier = Modifier.size(48.dp))
+
+        Button(
+            onClick = {
+                // Llama a la función del ViewModel para volver a INICIO
+                miViewModel.reiniciarJuego()
+            },
+            colors = ButtonDefaults.buttonColors(containerColor = Colores.CLASE_VERDE.color),
+            modifier = Modifier.size(200.dp, 60.dp)
+        ) {
+            Text(text = "Volver a Empezar", fontSize = 16.sp)
+        }
+    }
+}
 
     @Composable
     fun Boton(miViewModel: MyViewModel, enum_color: Colores) {
@@ -132,9 +193,9 @@ fun IU(miViewModel: MyViewModel) {
             //solo entra aqui si el boton esta activo = true
             while(_activo){
                 _color = enum_color.color_suave
-                delay(100)
+                delay(675)
                 _color = enum_color.color
-                delay(500)
+                delay(370)
             }
         }
 
@@ -155,6 +216,7 @@ fun IU(miViewModel: MyViewModel) {
             Text(text = enum_color.txt, fontSize = 10.sp)
         }
     }
+
 
 
 @Preview(showBackground = true)

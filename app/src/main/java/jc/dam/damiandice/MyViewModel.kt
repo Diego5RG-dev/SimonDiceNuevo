@@ -21,6 +21,8 @@ class MyViewModel(): ViewModel() {
     // usamos mutable, ya que la queremos modificar
     var _numbers = mutableStateOf(0)
 
+
+
     // inicializamos variables cuando instanciamos
     init {
         // estado inicial
@@ -60,11 +62,23 @@ class MyViewModel(): ViewModel() {
             Log.d(TAG_LOG, "GANAMOS - Estado: ${estadoLiveData.value}")
             true
         } else {
-            Log.d(TAG_LOG, "no es correcto")
+            Log.d(TAG_LOG, "no es correcto - GAME OVER")
             Datos.derrotas.value += 1
-            estadoLiveData.value = Estados.ADIVINANDO
-            Log.d(TAG_LOG, "otro intento - Estado: ${estadoLiveData.value}")
+            // Guardamos las rondas para el record
+            Datos.rondasSuperadas.value = Datos.victorias.value
+
+            //reseteamos las victorias
+            Datos.victorias.value = 0
+
+            estadoLiveData.value = Estados.ERROR
+
+            Log.d(TAG_LOG, "GAME OVER - RONDAS SUPERADAS: ${Datos.rondasSuperadas.value}")
             false
         }
+    }
+    // Función para que la pantalla de error pueda volver al inicio
+    fun reiniciarJuego(){
+        Log.d(TAG_LOG, "Reiniciando el juego.")
+        estadoLiveData.value = Estados.INICIO
     }
 }

@@ -12,6 +12,8 @@ object Datos {
     val victorias = MutableStateFlow(0)
     var derrotas = MutableStateFlow(0)
 
+    val rondasSuperadas = MutableStateFlow(0)
+
 }
 
 
@@ -23,7 +25,8 @@ enum class Colores (val color: Color, val color_suave: Color = Color.Transparent
     CLASE_VERDE(color = Color.Companion.Green, txt = ""),
     CLASE_AZUL(color = Color.Companion.Blue, txt = ""),
     CLASE_AMARILLO(color = Color.Companion.Yellow, txt = ""),
-    CLASE_START(color = Color.Magenta, color_suave = Color.Red, txt = "Start")
+    CLASE_START(color = Color.Transparent, color_suave = Color.Red, txt = "Start")
+
 }
 
 
@@ -34,4 +37,8 @@ enum class Estados(val start_activo: Boolean, val boton_activo: Boolean) {
     INICIO(start_activo = true, boton_activo = false),
     GENERANDO(start_activo = false, boton_activo = false),
     ADIVINANDO(start_activo = false, boton_activo = true),
+
+    RECORD(start_activo = false, boton_activo = true),
+    ERROR (start_activo = false, boton_activo = false)
+
 }
