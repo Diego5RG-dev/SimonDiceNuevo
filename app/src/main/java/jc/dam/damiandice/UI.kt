@@ -1,7 +1,6 @@
 package jc.dam.damiandice
 
 import android.util.Log
-import android.widget.Space
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,50 +11,58 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.collections.get
 import androidx.compose.material3.Text
-import androidx.compose.runtime.ComposableOpenTarget
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import kotlinx.coroutines.delay
-// Importar flowAsState para observar el puntaje
 import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.LiveData
+
 
 @Composable
 fun IU(miViewModel: MyViewModel) {
-    //Obtenemos estado actual del juego
+    var estadoActual by remember { mutableStateOf(miViewModel.estadoLiveData.value ?: Estados.INICIO) }
 
-    val estado by miViewModel.estadoLiveData.observeAsState(initial = Estados.INICIO)
+    // Observador del LiveData que actualiza el estado interno de Compose
+    miViewModel.estadoLiveData.observe(LocalLifecycleOwner.current) { nuevoEstado ->
+        estadoActual = nuevoEstado
+    }
 
-
+    // Elige la pantalla a mostrar basándose en el estado
+    when (estadoActual) {
+        Estados.INICIO, Estados.GENERANDO, Estados.ADIVINANDO, Estados.RECORD -> {
+            JuegoScreen(miViewModel = miViewModel)
+        }
+        Estados.ERROR -> {
+            GameOverScreen(miViewModel = miViewModel)
+        }
+    }
+}
+@Composable
+fun JuegoScreen(miViewModel: MyViewModel) {
+// Observamos las victorias para la ronda actual
+    val victorias by Datos.victorias.collectAsState()
+    // Observamos el record guardado
+    val rondasSuperadas by Datos.rondasSuperadas.collectAsState()
     Column(
         modifier = Modifier.fillMaxWidth().fillMaxHeight().padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceAround
     ) {
         Text(
-            text = "RECORD: ",
+            text = "Ronda: $victorias  / Record: $rondasSuperadas",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 24.dp)
@@ -124,11 +131,7 @@ fun GameOverScreen(miViewModel: MyViewModel) {
         }
     }
 }
-@Composable
-fun <T> LiveData<T>.observeAsState(initial: T): androidx.compose.runtime.State<T> {
-    val lifecycleOwner = LocalLifecycleOwner.current
-    return androidx.lifecycle.compose.observeAsState(initial = initial, lifecycleOwner = lifecycleOwner)
-}
+
     @Composable
     fun Boton(miViewModel: MyViewModel, enum_color: Colores) {
 
