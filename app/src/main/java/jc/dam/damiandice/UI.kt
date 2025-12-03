@@ -275,8 +275,8 @@ fun GameOverScreen(miViewModel: MyViewModel) {
     }
 
 
-@Preview(showBackground = true)
+/*@Preview(showBackground = true)
 @Composable
 fun IUPreview(){
     IU(MyViewModel())
-}
+}*/
