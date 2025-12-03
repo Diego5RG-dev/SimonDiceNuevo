@@ -70,7 +70,7 @@ class MyViewModel(application: Application): AndroidViewModel(application) {
             Datos.rondasSuperadas.value = Datos.victorias.value
             Datos.victorias.value = 0
             //llamamos a esRecord cuando perdamos para verificar si se supero el record
-            esRecord(Datos.rondasSuperadas.value)
+            esRecord(Datos.victorias.value)
 
             estadoLiveData.value = Estados.ERROR
             Log.d(TAG_LOG, "PERDIMOS - Estado: ${estadoLiveData.value}")
