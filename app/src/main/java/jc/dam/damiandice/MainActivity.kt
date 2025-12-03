@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //Inicializamos el ViewModel
-        val miViewModel: MyViewModel = MyViewModel()
+        val miViewModel= MyViewModel(application)
 
         enableEdgeToEdge()
         setContent {
@@ -27,10 +27,3 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun FunPreview() {
-    val miViewModel: MyViewModel = MyViewModel()
-    //comentario
-    IU(miViewModel)
-}

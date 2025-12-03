@@ -1,13 +1,15 @@
 package jc.dam.damiandice
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import kotlin.collections.plusAssign
 
-class MyViewModel(): ViewModel() {
+class MyViewModel(application: Application): AndroidViewModel(application) {
 
     // etiqueta para logcat
     private val TAG_LOG = "miDebug"
@@ -27,6 +29,7 @@ class MyViewModel(): ViewModel() {
     init {
         // estado inicial
         Log.d(TAG_LOG, "Inicializamos ViewModel - Estado: ${estadoLiveData.value}")
+        Datos.rondasSuperadas.value= ControladorPreference.obtenerRecord(application)
     }
 
     /**
@@ -64,8 +67,8 @@ class MyViewModel(): ViewModel() {
 
             Datos.derrotas.value ++
             Datos.rondasSuperadas.value = Datos.victorias.value
+            esRecord(Datos.victorias.value)
             Datos.victorias.value = 0
-
             estadoLiveData.value = Estados.ERROR
             Log.d(TAG_LOG, "PERDIMOS - Estado: ${estadoLiveData.value}")
             return
@@ -93,5 +96,21 @@ class MyViewModel(): ViewModel() {
         estadoLiveData.value = Estados.INICIO
     }
 
+
+    //Funciones para comprobar si es record, y que este se almacene
+    fun esRecord(posibleRecord: Int) {
+        if (posibleRecord > obtenerRecord()) {
+            ControladorPreference.actualizarRecord(getApplication(), posibleRecord)
+            Datos.rondasSuperadas.value = posibleRecord
+            Log.d("_PREF", "Es record")
+        } else {
+            Log.d("_PREF", "No es record")
+        }
+    }
+    fun obtenerRecord(): Int {
+        Datos.rondasSuperadas.value =  ControladorPreference.obtenerRecord(getApplication())
+        Log.d("_PREF", "Record: ${(Datos.rondasSuperadas.value)}")
+        return Datos.rondasSuperadas.value
+    }
 
 }
